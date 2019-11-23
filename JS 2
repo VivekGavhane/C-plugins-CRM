@@ -1,0 +1,10 @@
+function prompt1() {
+       var txt;
+       var person = prompt("Please enter your reason for 'Rejection':");
+       if (person == null || person == "") {
+           txt = "User cancelled the prompt.";
+       } else {
+           txt = person;
+       }
+       parent.Xrm.Page.getAttribute("name").setValue(txt);
+}
