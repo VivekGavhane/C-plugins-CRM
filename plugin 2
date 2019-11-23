@@ -1,0 +1,66 @@
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Client;
+using System.ServiceModel.Description;
+using Microsoft.Xrm.Sdk.Query;
+using System;
+using System.ServiceModel;
+
+namespace TrialCrmProject
+{
+    public class TrialCrmProject : IPlugin
+    {
+
+        public void Execute(IServiceProvider serviceProvider)
+        {
+            ITracingService tracingService = (ITracingService)serviceProvider.GetService(typeof(ITracingService));
+            IPluginExecutionContext context = (IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext));
+            IOrganizationServiceFactory serviceFactory = (IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory));
+            IOrganizationService service = serviceFactory.CreateOrganizationService(context.UserId);
+
+
+            if (context.InputParameters.Contains("Target") &&
+                context.InputParameters["Target"] is Entity)
+            {
+                if (context.Depth > 1)
+                {
+                    return;
+                }
+                Entity entity = (Entity)context.InputParameters["Target"];
+                entity = service.Retrieve(entity.LogicalName, entity.Id, new ColumnSet(true));
+
+               
+                    try
+                    {
+                    string fetchxml = @"<?xml version='1.0'?><fetch distinct='false' mapping='logical' output-format='xml-platform' version='1.0'>
+<entity name='contact'><attribute name='fullname'/><attribute name='telephone1'/>
+<attribute name='contactid'/><order descending='false' attribute='fullname'/><filter type='and'>
+<condition attribute='parentcustomerid' value='" + entity.Id + @"' uitype='account' operator='eq'/></filter></entity></fetch>
+";
+
+
+                    EntityCollection allEntityCollection = service.RetrieveMultiple(new FetchExpression(fetchxml));
+
+                    foreach (Entity e in allEntityCollection.Entities)
+                    {
+                        Entity updatedContact = new Entity(e.LogicalName);
+                        updatedContact.Id = e.Id;
+                        updatedContact["mobilephone"] = entity["telephone1"];
+                        service.Update(updatedContact);        // To update an entity we need to have it's Logical name and ID  as we mentioned above
+                    }
+                }
+                        
+                    
+
+                    catch (FaultException<OrganizationServiceFault> ex)
+                    {
+                        throw new InvalidPluginExecutionException(ex.Message);
+                    }
+
+                    catch (Exception ex)
+                    {
+                        throw new FaultException(ex.Message);
+                    }
+                }
+            }
+        }
+    }
