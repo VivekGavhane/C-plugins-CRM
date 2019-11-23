@@ -1,0 +1,28 @@
+
+if(context.InputParameters.Contains("Target") && context.InputParamaters["Target"] is Entity)
+{
+            	if(context.MessageName.ToLower() == "update")
+            	{
+                            	Entity contact = context.InputParameters["Target"] as Entity;
+string fetchxml = @"<fetch version='1.0' output-format='xml-platform' mapping='logical' distinct='false'>
+  <entity name='account'>
+	<attribute name='name' />
+	<attribute name='primarycontactid' />
+	<attribute name='telephone1' />
+	<attribute name='accountid' />
+	<order attribute='name' descending='false' />
+	<filter type='and'>
+  	<condition attribute='name' operator='like' value='%a%' />
+	</filter>
+  </entity>
+</fetch>";
+ 
+EntityCollection allEntityCollection = service.RetrieveMultiple(new FetchExpression(fetchxml));
+string str = sttring.Empty;
+foreach(Entity e in allEntityCollection.Entities)
+{
+            	str = str + e.Attributes["firstname"].ToString();
+}
+throw new InvalidPluginExecutionException(str);
+            	}
+}
