@@ -1,0 +1,76 @@
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
+using System;
+using System.Collections.Generic;
+
+namespace PluginTest
+{
+    public class Age : IPlugin
+    {
+        public void Execute(IServiceProvider serviceProvider)
+        {
+            ITracingService tracer = (ITracingService)serviceProvider.GetService(typeof(ITracingService));
+            IPluginExecutionContext context = (IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext));
+            IOrganizationServiceFactory factory = (IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory));
+            IOrganizationService service = factory.CreateOrganizationService(context.UserId);
+
+            try
+            {
+                Entity entity = (Entity)context.InputParameters["Target"];
+                entity = service.Retrieve(entity.LogicalName, entity.Id, new ColumnSet(true));
+
+                string descriptionText = (entity.Attributes["description"].ToString());
+                string[] words = descriptionText.Split(' ');
+
+                EntityCollection accountsInSystem = null;
+                EntityCollection contactsInSystem = null;
+
+                var accountList = new List<Entity>();
+                var contactList = new List<Entity>();
+
+                foreach (var word in words)
+                {
+                    // see if there exist an account
+                    QueryExpression accountQuery = new QueryExpression();
+                    accountQuery.EntityName = "account";
+                    accountQuery.ColumnSet = new ColumnSet(true);
+                    accountQuery.Criteria = new FilterExpression();
+                    accountQuery.Criteria.AddCondition("name", ConditionOperator.Equal, word);
+                    accountsInSystem = service.RetrieveMultiple(accountQuery);
+
+                    foreach (Entity e in accountsInSystem.Entities)  //we use foreach bcz we need single single entity to be enter in accountList. Because we can not Add RetrieveMultiple entities to AccountList directly.
+                    {
+                        accountList.Add(e);
+                    }
+
+                    // see if there exist a contact
+                    QueryExpression contactQuery = new QueryExpression();
+                    contactQuery.EntityName = "contact";
+                    contactQuery.ColumnSet = new ColumnSet(true);
+                    contactQuery.Criteria = new FilterExpression();
+                    contactQuery.Criteria.AddCondition("firstname", ConditionOperator.Equal, word);
+                    contactsInSystem = service.RetrieveMultiple(contactQuery);
+
+                    foreach (Entity e1 in contactsInSystem.Entities)  //we use foreach bcz we need single single entity to be enter in accountList. Because we can not Add RetrieveMultiple entities to AccountList directly.
+                    {
+                        contactList.Add(e1);
+                    }
+
+                }
+
+                var ListofLists = new List<List<Entity>>();
+                ListofLists.Add(accountList);
+                ListofLists.Add(contactList);
+
+                //Here we will get output as 2 because there are 2 lists in  ListofLists
+                throw new InvalidPluginExecutionException("Total number of lists present in a System are" + ListofLists.Count);  
+
+            }
+
+            catch (Exception e)
+            {
+                throw new InvalidPluginExecutionException(e.Message);
+            }
+        }
+    }
+}
