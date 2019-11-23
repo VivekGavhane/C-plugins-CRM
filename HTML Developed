@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script>
+	// field that needs to be change to run a function "myFunction"
+	function addMessageToOnChange() 
+			{ 
+			   parent.Xrm.Page.data.entity.attributes.get("name").addOnChange(myFunction);
+			}
+	//function to be run on change of field "name"
+        function myFunction() {
+            var accountName = parent.Xrm.Page.getAttribute("name").getValue();
+			if(accountName == "Microsoft")
+			{
+				document.getElementById("demobox").style.display = "none";
+			}
+			else
+			{
+				document.getElementById("demobox").innerHTML = "Hi there from here...!";
+			}
+        }
+        </script>
+</head>
+<body onload="addMessageToOnChange()">		
+		<div id="demobox"; style="background-color: #cfc ; padding: 10px; border: 1px solid green;">
+</body>
+</html>
